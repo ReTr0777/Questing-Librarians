@@ -14,7 +14,6 @@ import net.minecraft.world.item.component.CustomData;
 import net.minecraft.world.item.trading.MerchantOffer;
 import net.minecraft.world.item.trading.MerchantOffers;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
@@ -23,12 +22,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(MerchantScreen.class)
 public abstract class MerchantScreenMixin {
-
-    @Shadow
-    protected int leftPos;
-
-    @Shadow
-    protected int topPos;
 
     /**
      * Suppresses the default "Trades" header so it can be replaced by the Book Slots note and Help button.
@@ -136,15 +129,18 @@ public abstract class MerchantScreenMixin {
      */
     @Inject(method = "mouseClicked", at = @At("HEAD"), cancellable = true)
     private void onTutorialClick(MouseButtonEvent event, boolean doubleClick, CallbackInfoReturnable<Boolean> cir) {
+        MerchantScreen screen = (MerchantScreen) (Object) this;
+
         if (!TutorialConfig.hasSeenTutorial) {
             // Dismiss active tutorial on click
             TutorialConfig.hasSeenTutorial = true;
             TutorialConfig.save();
             cir.setReturnValue(true);
         } else {
-            // Check if user clicked the [?] Help button at x = 75..100, y = 4..16 relative to leftPos/topPos
-            double relX = event.x() - this.leftPos;
-            double relY = event.y() - this.topPos;
+            // Check if user clicked the [?] Help button at x = 75..100, y = 4..16 relative to screen leftPos/topPos
+            AbstractContainerScreenAccessor accessor = (AbstractContainerScreenAccessor) screen;
+            double relX = event.x() - accessor.getLeftPos();
+            double relY = event.y() - accessor.getTopPos();
 
             if (relX >= 75 && relX <= 100 && relY >= 4 && relY <= 16) {
                 // Re-open tutorial guide card

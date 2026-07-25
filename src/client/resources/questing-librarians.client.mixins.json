@@ -3,6 +3,7 @@
 	"package": "com.retr0.questinglibrarians.client.mixin",
 	"compatibilityLevel": "JAVA_25",
 	"client": [
+		"AbstractContainerScreenAccessor",
 		"ExampleClientMixin",
 		"MerchantScreenMixin"
 	],
