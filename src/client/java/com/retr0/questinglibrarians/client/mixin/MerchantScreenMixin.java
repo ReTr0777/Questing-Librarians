@@ -78,27 +78,22 @@ public abstract class MerchantScreenMixin {
     }
 
     /**
-     * Renders the first-time tutorial overlay card dead-centered on the player's screen monitor.
+     * Renders the first-time tutorial overlay card dead-centered on the screen.
      */
     @Inject(method = "extractContents", at = @At("TAIL"))
     private void renderTutorialOverlay(GuiGraphicsExtractor graphicsExtractor, int mouseX, int mouseY, float partialTick, CallbackInfo ci) {
         if (!TutorialConfig.hasSeenTutorial) {
-            MerchantScreen screen = (MerchantScreen) (Object) this;
-            AbstractContainerScreenAccessor accessor = (AbstractContainerScreenAccessor) screen;
             Font font = Minecraft.getInstance().font;
-
-            int left = accessor.getLeftPos();
-            int top = accessor.getTopPos();
 
             int screenWidth = Minecraft.getInstance().getWindow().getGuiScaledWidth();
             int screenHeight = Minecraft.getInstance().getWindow().getGuiScaledHeight();
 
-            // 1. Dim full screen background
-            graphicsExtractor.fill(-left, -top, screenWidth - left, screenHeight - top, 0xD0000000);
+            // 1. Dim full screen background (0,0 to screenWidth,screenHeight)
+            graphicsExtractor.fill(0, 0, screenWidth, screenHeight, 0xD0000000);
 
-            // 2. Exact screen center relative to container space
-            int centerX = (screenWidth / 2) - left;
-            int centerY = (screenHeight / 2) - top;
+            // 2. Exact screen center
+            int centerX = screenWidth / 2;
+            int centerY = screenHeight / 2;
 
             int minX = centerX - 120;
             int maxX = centerX + 120;
@@ -132,7 +127,6 @@ public abstract class MerchantScreenMixin {
 
             // Centered Button Box
             int btnWidth = 120;
-            int btnHeight = 20;
             int btnMinX = centerX - (btnWidth / 2);
             int btnMaxX = centerX + (btnWidth / 2);
             int btnMinY = maxY - 26;
