@@ -3,7 +3,9 @@ package com.retr0.questinglibrarians;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.event.player.UseEntityCallback;
 import net.minecraft.core.component.DataComponents;
+import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.resources.Identifier;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionResult;
@@ -66,8 +68,14 @@ public class QuestingLibrarians implements ModInitializer {
 								player.drop(returnedBooks, false);
 							}
 
+							// Play grindstone sound & spawn poof particles
 							world.playSound(null, villager.getX(), villager.getY(), villager.getZ(),
 									SoundEvents.GRINDSTONE_USE, SoundSource.NEUTRAL, 1.0f, 1.0f);
+
+							if (world instanceof ServerLevel serverWorld) {
+								serverWorld.sendParticles(ParticleTypes.POOF, villager.getX(), villager.getY() + 1.0, villager.getZ(), 20, 0.4, 0.4, 0.4, 0.05);
+							}
+
 							return InteractionResult.SUCCESS;
 						}
 					}
@@ -135,9 +143,17 @@ public class QuestingLibrarians implements ModInitializer {
 							itemInHand.shrink(1);
 						}
 
-						// Play villager librarian work sound at villager location
+						// Play enchantment table chime & villager work sound
 						world.playSound(null, villager.getX(), villager.getY(), villager.getZ(),
-								SoundEvents.VILLAGER_WORK_LIBRARIAN, SoundSource.NEUTRAL, 1.0f, 1.0f);
+								SoundEvents.ENCHANTMENT_TABLE_USE, SoundSource.NEUTRAL, 1.0f, 1.0f);
+						world.playSound(null, villager.getX(), villager.getY(), villager.getZ(),
+								SoundEvents.VILLAGER_WORK_LIBRARIAN, SoundSource.NEUTRAL, 0.8f, 1.0f);
+
+						// Spawn glowing enchantment glyph particles around villager
+						if (world instanceof ServerLevel serverWorld) {
+							serverWorld.sendParticles(ParticleTypes.ENCHANT, villager.getX(), villager.getY() + 1.0, villager.getZ(), 25, 0.5, 0.5, 0.5, 0.1);
+							serverWorld.sendParticles(ParticleTypes.ENCHANTED_HIT, villager.getX(), villager.getY() + 1.0, villager.getZ(), 15, 0.3, 0.3, 0.3, 0.1);
+						}
 
 						// Return SUCCESS to cleanly consume interaction event
 						return InteractionResult.SUCCESS;
