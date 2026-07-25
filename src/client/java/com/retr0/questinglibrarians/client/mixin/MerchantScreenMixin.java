@@ -71,56 +71,61 @@ public abstract class MerchantScreenMixin {
             Component noteText = Component.literal("Book Slots: " + customBookCount + "/" + maxBooks);
             graphicsExtractor.text(Minecraft.getInstance().font, noteText, 8, 6, 0xFF404040, false);
 
-            // Render clickable [?] Help button next to the label (x = 80, y = 6)
+            // Render clickable [?] Help button next to the label (x = 85, y = 6)
             Component helpButton = Component.literal("[?]");
-            graphicsExtractor.text(Minecraft.getInstance().font, helpButton, 80, 6, 0xFF4A90E2, true);
+            graphicsExtractor.text(Minecraft.getInstance().font, helpButton, 85, 6, 0xFF4A90E2, true);
         }
     }
 
     /**
-     * Renders the first-time tutorial overlay card centered inside the trading window.
+     * Renders the first-time tutorial overlay card perfectly centered on the screen.
      */
     @Inject(method = "extractContents", at = @At("TAIL"))
     private void renderTutorialOverlay(GuiGraphicsExtractor graphicsExtractor, int mouseX, int mouseY, float partialTick, CallbackInfo ci) {
         if (!TutorialConfig.hasSeenTutorial) {
+            MerchantScreen screen = (MerchantScreen) (Object) this;
+            AbstractContainerScreenAccessor accessor = (AbstractContainerScreenAccessor) screen;
             Font font = Minecraft.getInstance().font;
 
-            // Full-screen dim overlay
-            graphicsExtractor.fill(-300, -300, 600, 600, 0xD0000000);
+            int left = accessor.getLeftPos();
+            int top = accessor.getTopPos();
 
-            // Centered Tutorial Card (X: 28 to 248, Y: 18 to 148)
-            graphicsExtractor.fill(28, 18, 248, 148, 0xF0141418);
+            // Full-screen dim overlay covering absolute screen bounds (0,0 to screenWidth,screenHeight)
+            graphicsExtractor.fill(-left, -top, screen.width - left, screen.height - top, 0xD0000000);
+
+            // Centered Tutorial Card (X: 23 to 253, Y: 15 to 151) inside container space
+            graphicsExtractor.fill(23, 15, 253, 151, 0xF0141418);
 
             // Blue accent borders
-            graphicsExtractor.fill(26, 16, 250, 18, 0xFF4A90E2);
-            graphicsExtractor.fill(26, 148, 250, 150, 0xFF4A90E2);
-            graphicsExtractor.fill(26, 16, 28, 150, 0xFF4A90E2);
-            graphicsExtractor.fill(248, 16, 250, 150, 0xFF4A90E2);
+            graphicsExtractor.fill(21, 13, 255, 15, 0xFF4A90E2);
+            graphicsExtractor.fill(21, 151, 255, 153, 0xFF4A90E2);
+            graphicsExtractor.fill(21, 13, 23, 153, 0xFF4A90E2);
+            graphicsExtractor.fill(253, 13, 255, 153, 0xFF4A90E2);
 
             // Centered Header
             Component title = Component.literal("Questing Librarians Guide");
             int titleX = 138 - (font.width(title) / 2);
-            graphicsExtractor.text(font, title, titleX, 24, 0xFFFFD700, true);
+            graphicsExtractor.text(font, title, titleX, 22, 0xFFFFD700, true);
 
             // Guide Lines
-            graphicsExtractor.text(font, Component.literal("1. Teach Trades: Right-click a Librarian"), 36, 40, 0xFFE0E0E0, false);
-            graphicsExtractor.text(font, Component.literal("   with a found Enchanted Book."), 36, 50, 0xFFA0A0A0, false);
+            graphicsExtractor.text(font, Component.literal("1. Teach Trades: Right-click a Librarian"), 31, 38, 0xFFE0E0E0, false);
+            graphicsExtractor.text(font, Component.literal("   with a found Enchanted Book."), 31, 48, 0xFFA0A0A0, false);
 
-            graphicsExtractor.text(font, Component.literal("2. Curing Bonus: Cure a Master Zombie"), 36, 64, 0xFFE0E0E0, false);
-            graphicsExtractor.text(font, Component.literal("   Villager for a max-level book trade!"), 36, 74, 0xFFA0A0A0, false);
+            graphicsExtractor.text(font, Component.literal("2. Curing Bonus: Cure a Master Zombie"), 31, 62, 0xFFE0E0E0, false);
+            graphicsExtractor.text(font, Component.literal("   Villager for a max-level book trade!"), 31, 72, 0xFFA0A0A0, false);
 
-            graphicsExtractor.text(font, Component.literal("3. Grindstone Reset: Wipe taught trades"), 36, 88, 0xFFE0E0E0, false);
-            graphicsExtractor.text(font, Component.literal("   with a Grindstone to refund Books."), 36, 98, 0xFFA0A0A0, false);
+            graphicsExtractor.text(font, Component.literal("3. Grindstone Reset: Wipe taught trades"), 31, 86, 0xFFE0E0E0, false);
+            graphicsExtractor.text(font, Component.literal("   with a Grindstone to refund Books."), 31, 96, 0xFFA0A0A0, false);
 
             // Centered Button Box
-            graphicsExtractor.fill(78, 120, 198, 138, 0xFF2E7D32);
+            graphicsExtractor.fill(78, 120, 198, 140, 0xFF2E7D32);
             graphicsExtractor.fill(76, 118, 200, 120, 0xFF4CAF50);
-            graphicsExtractor.fill(76, 138, 200, 140, 0xFF4CAF50);
+            graphicsExtractor.fill(76, 140, 200, 142, 0xFF4CAF50);
 
             // Button Label
             Component buttonText = Component.literal("[ Click to Continue ]");
             int buttonX = 138 - (font.width(buttonText) / 2);
-            graphicsExtractor.text(font, buttonText, buttonX, 124, 0xFFFFFFFF, true);
+            graphicsExtractor.text(font, buttonText, buttonX, 126, 0xFFFFFFFF, true);
         }
     }
 
@@ -137,12 +142,12 @@ public abstract class MerchantScreenMixin {
             TutorialConfig.save();
             cir.setReturnValue(true);
         } else {
-            // Check if user clicked the [?] Help button at x = 75..100, y = 4..16 relative to screen leftPos/topPos
+            // Check if user clicked the [?] Help button at x = 80..105, y = 4..16 relative to leftPos/topPos
             AbstractContainerScreenAccessor accessor = (AbstractContainerScreenAccessor) screen;
             double relX = event.x() - accessor.getLeftPos();
             double relY = event.y() - accessor.getTopPos();
 
-            if (relX >= 75 && relX <= 100 && relY >= 4 && relY <= 16) {
+            if (relX >= 80 && relX <= 105 && relY >= 4 && relY <= 16) {
                 // Re-open tutorial guide card
                 TutorialConfig.hasSeenTutorial = false;
                 cir.setReturnValue(true);
