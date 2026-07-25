@@ -109,21 +109,37 @@ public abstract class MerchantScreenMixin {
             graphicsExtractor.fill(minX - 2, minY - 2, minX, maxY + 2, 0xFF4A90E2);
             graphicsExtractor.fill(maxX, minY - 2, maxX + 2, maxY + 2, 0xFF4A90E2);
 
-            // Centered Header
+            // Centered Header (Yellow)
             Component title = Component.literal("Questing Librarians Guide");
             int titleX = centerX - (font.width(title) / 2);
             graphicsExtractor.text(font, title, titleX, minY + 8, 0xFFFFD700, true);
 
-            // Guide Lines
+            // Guide Lines (White titles, Gray description body)
             int textLeft = minX + 12;
-            graphicsExtractor.text(font, Component.literal("1. Teach Trades: Right-click a Librarian"), textLeft, minY + 24, 0xFFE0E0E0, false);
-            graphicsExtractor.text(font, Component.literal("   with a found Enchanted Book."), textLeft, minY + 34, 0xFFA0A0A0, false);
 
-            graphicsExtractor.text(font, Component.literal("2. Curing Bonus: Cure a Master Zombie"), textLeft, minY + 48, 0xFFE0E0E0, false);
-            graphicsExtractor.text(font, Component.literal("   Villager for a max-level book trade!"), textLeft, minY + 58, 0xFFA0A0A0, false);
+            // Line 1: Teach Trades
+            Component b1Header = Component.literal("1. Teach Trades:");
+            Component b1Desc1 = Component.literal(" Right-click a Librarian");
+            Component b1Desc2 = Component.literal("   with a found Enchanted Book.");
+            graphicsExtractor.text(font, b1Header, textLeft, minY + 24, 0xFFFFFFFF, false);
+            graphicsExtractor.text(font, b1Desc1, textLeft + font.width(b1Header), minY + 24, 0xFFA0A0A0, false);
+            graphicsExtractor.text(font, b1Desc2, textLeft, minY + 34, 0xFFA0A0A0, false);
 
-            graphicsExtractor.text(font, Component.literal("3. Grindstone Reset: Wipe taught trades"), textLeft, minY + 72, 0xFFE0E0E0, false);
-            graphicsExtractor.text(font, Component.literal("   with a Grindstone to refund Books."), textLeft, minY + 82, 0xFFA0A0A0, false);
+            // Line 2: Curing Bonus
+            Component b2Header = Component.literal("2. Curing Bonus:");
+            Component b2Desc1 = Component.literal(" Cure a Master Zombie");
+            Component b2Desc2 = Component.literal("   Villager for a max-level book trade!");
+            graphicsExtractor.text(font, b2Header, textLeft, minY + 48, 0xFFFFFFFF, false);
+            graphicsExtractor.text(font, b2Desc1, textLeft + font.width(b2Header), minY + 48, 0xFFA0A0A0, false);
+            graphicsExtractor.text(font, b2Desc2, textLeft, minY + 58, 0xFFA0A0A0, false);
+
+            // Line 3: Grindstone Reset
+            Component b3Header = Component.literal("3. Grindstone Reset:");
+            Component b3Desc1 = Component.literal(" Wipe taught trades");
+            Component b3Desc2 = Component.literal("   with a Grindstone to refund Books.");
+            graphicsExtractor.text(font, b3Header, textLeft, minY + 72, 0xFFFFFFFF, false);
+            graphicsExtractor.text(font, b3Desc1, textLeft + font.width(b3Header), minY + 72, 0xFFA0A0A0, false);
+            graphicsExtractor.text(font, b3Desc2, textLeft, minY + 82, 0xFFA0A0A0, false);
 
             // Centered Button Box
             int btnWidth = 120;
