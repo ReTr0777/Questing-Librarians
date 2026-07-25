@@ -85,4 +85,4 @@ To launch the test client:
 
 ## License
 
-This mod is available under the CC0-1.0 license. Feel free to use, modify, or include it in modpacks.
+This mod is available under the MIT license. Feel free to use, modify, or include it in modpacks.
