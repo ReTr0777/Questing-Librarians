@@ -9,6 +9,8 @@ Instead of breaking and replacing a lectern hundreds of times until you get the 
 ## Features
 
 - **No Random Book Rerolling**: Vanilla Librarian trade pools are overridden so random enchanted books never appear. Standard items like paper, bookshelves, lanterns, glass, clocks, compasses, and candles remain intact.
+- **⬆️ Slot-Saving Trade Upgrades**: Teaching a Librarian a higher level of an enchantment they already know (e.g. Protection IV to a villager with Protection II) **upgrades the existing trade in-place** without taking up a new trade slot!
+- **🎆 Master Level-Up Celebration**: Reaching Level 5 (Master) plays a challenge complete fanfare and erupts a golden particle celebration (`totem_of_undying` & `happy_villager`) around the villager!
 - **🏷️ Found vs Traded Book Tooltips**: Hovering over ANY Enchanted Book in your inventory displays its status:
   - `✔ Can Teach Librarians (Found Book)` (in Green) for naturally found, enchanted, or looted books.
   - `✖ Cannot Teach Librarians (Traded Book)` (in Red) for books bought from villagers.
@@ -40,10 +42,11 @@ Instead of breaking and replacing a lectern hundreds of times until you get the 
 1. Open a villager trading screen to see the **First-Time Guide** (click anywhere on the card to dismiss it, or click `[?]` to view it again).
 2. Find Enchanted Books through exploration, loot chests, enchanting, or by curing Level 5 Master Zombie Villagers.
 3. Hover over Enchanted Books in your inventory to see their status: `✔ Can Teach Librarians (Found Book)` in Green vs `✖ Cannot Teach Librarians (Traded Book)` in Red.
-4. Curing a **Level 5 Master Zombie Villager** generates a new, random max-level Enchanted Book trade offer directly in the villager's trade list (one-time reward per villager) and expands total capacity to **4 book slots**.
-5. Open the trading GUI to see the `Book Slots: X/Y` note at the top left of the window.
-6. Right-click a Librarian villager with a found book in hand to teach them the trade—enjoy the magical chime and glowing enchantment particles!
-7. You can hold a Grindstone and right-click a villager to wipe all player-taught trades and get regular Books back. The Grindstone will **never** wipe cured reward trades.
+4. Right-click a Librarian villager with a found book in hand to teach them the trade—enjoy the magical chime and glowing enchantment particles!
+5. If you teach a higher tier of a trade the villager already knows, it **upgrades the existing trade in-place** without using a new slot!
+6. Curing a **Level 5 Master Zombie Villager** generates a new, random max-level Enchanted Book trade offer directly in the villager's trade list (one-time reward per villager) and expands total capacity to **4 book slots**.
+7. Reaching Level 5 (Master) triggers a celebration fanfare & golden particle eruption!
+8. You can hold a Grindstone and right-click a villager to wipe all player-taught trades and get regular Books back. The Grindstone will **never** wipe cured reward trades.
 
 ---
 
@@ -62,11 +65,11 @@ To build the mod `.jar` file:
 .\gradlew.bat build
 ```
 
-The compiled mod will be generated in `build/libs/questing-librarians-4.4.0.jar`.
+The compiled mod will be generated in `build/libs/questing-librarians-4.5.0.jar`.
 
 ### Installation
 
-Drop `questing-librarians-4.4.0.jar` into your `.minecraft/mods` directory alongside Fabric API.
+Drop `questing-librarians-4.5.0.jar` into your `.minecraft/mods` directory alongside Fabric API.
 
 ---
 

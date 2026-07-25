@@ -2,6 +2,7 @@ package com.retr0.questinglibrarians;
 
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.event.player.UseEntityCallback;
+import net.minecraft.core.Holder;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.resources.Identifier;
@@ -14,6 +15,8 @@ import net.minecraft.world.entity.npc.villager.VillagerProfession;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.component.CustomData;
+import net.minecraft.world.item.enchantment.Enchantment;
+import net.minecraft.world.item.enchantment.ItemEnchantments;
 import net.minecraft.world.item.trading.ItemCost;
 import net.minecraft.world.item.trading.MerchantOffer;
 import net.minecraft.world.item.trading.MerchantOffers;
@@ -31,7 +34,7 @@ public class QuestingLibrarians implements ModInitializer {
 	public void onInitialize() {
 		LOGGER.info("Initializing Questing Librarians!");
 
-		// Register interaction event to allow Librarians to learn and unlearn Enchanted Book trades
+		// Register interaction event to allow Librarians to learn, upgrade, and unlearn Enchanted Book trades
 		UseEntityCallback.EVENT.register((player, world, hand, entity, hitResult) -> {
 			// Ensure logic only executes on the server side to prevent desyncs
 			if (!world.isClientSide()) {
@@ -80,7 +83,7 @@ public class QuestingLibrarians implements ModInitializer {
 						}
 					}
 
-					// Feature 2: Teaching Enchanted Books (Found Books ONLY, not Traded/Bought Books)
+					// Feature 2: Teaching / Upgrading Enchanted Books (Found Books ONLY, not Traded/Bought Books)
 					if (itemInHand.is(Items.ENCHANTED_BOOK)) {
 						// Reject traded/bought books
 						CustomData customData = itemInHand.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY);
@@ -91,8 +94,65 @@ public class QuestingLibrarians implements ModInitializer {
 						}
 
 						MerchantOffers offers = villager.getOffers();
+						int villagerLevel = villager.getVillagerData().level();
 
-						// Count existing taught Enchanted Book trades on this villager
+						// Sub-Feature 2A: Trade Upgrading
+						// If the villager already knows a trade for an enchantment in this book, upgrade it in-place!
+						ItemEnchantments handEnchants = itemInHand.getOrDefault(DataComponents.STORED_ENCHANTMENTS, ItemEnchantments.EMPTY);
+						for (int i = 0; i < offers.size(); i++) {
+							MerchantOffer offer = offers.get(i);
+							ItemStack result = offer.getResult();
+							if (result.is(Items.ENCHANTED_BOOK)) {
+								ItemEnchantments tradeEnchants = result.getOrDefault(DataComponents.STORED_ENCHANTMENTS, ItemEnchantments.EMPTY);
+
+								for (Holder<Enchantment> ench : handEnchants.keySet()) {
+									int handLevel = handEnchants.getLevel(ench);
+									int tradeLevel = tradeEnchants.getLevel(ench);
+
+									if (tradeLevel > 0) {
+										if (handLevel > tradeLevel) {
+											// Upgrade existing trade in-place without taking up a new slot
+											ItemStack upgradedBook = itemInHand.copy();
+											upgradedBook.setCount(1);
+											CustomData.update(DataComponents.CUSTOM_DATA, upgradedBook, tag -> tag.putBoolean("traded", true));
+
+											int emeraldCost = Math.max(1, 15 - (villagerLevel - 1) * 2);
+											MerchantOffer upgradedOffer = new MerchantOffer(
+													new ItemCost(Items.EMERALD, emeraldCost),
+													Optional.of(new ItemCost(Items.BOOK, 1)),
+													upgradedBook,
+													12,
+													5,
+													0.05f
+											);
+
+											offers.set(i, upgradedOffer);
+
+											if (!player.getAbilities().instabuild) {
+												itemInHand.shrink(1);
+											}
+
+											world.playSound(null, villager.getX(), villager.getY(), villager.getZ(),
+													SoundEvents.ENCHANTMENT_TABLE_USE, SoundSource.NEUTRAL, 1.0f, 1.0f);
+
+											if (world instanceof ServerLevel serverWorld) {
+												serverWorld.sendParticles(ParticleTypes.ENCHANT, villager.getX(), villager.getY() + 1.0, villager.getZ(), 30, 0.5, 0.5, 0.5, 0.1);
+												serverWorld.sendParticles(ParticleTypes.ENCHANTED_HIT, villager.getX(), villager.getY() + 1.0, villager.getZ(), 20, 0.3, 0.3, 0.3, 0.1);
+											}
+
+											return InteractionResult.SUCCESS;
+										} else {
+											// Hand level is <= existing trade level
+											world.playSound(null, villager.getX(), villager.getY(), villager.getZ(),
+													SoundEvents.VILLAGER_NO, SoundSource.NEUTRAL, 1.0f, 1.0f);
+											return InteractionResult.FAIL;
+										}
+									}
+								}
+							}
+						}
+
+						// Sub-Feature 2B: Teaching a New Trade (Checking Capacity)
 						int customBookCount = 0;
 						for (MerchantOffer offer : offers) {
 							if (offer.getResult().is(Items.ENCHANTED_BOOK)) {
@@ -103,7 +163,6 @@ public class QuestingLibrarians implements ModInitializer {
 						// Calculate maximum allowed book trades:
 						// If cured: Max 4 slots total (1 cured trade + 3 taught trades)
 						// Otherwise: Levels 1-4 = Max 2 books | Level 5 (Master) = Max 3 books
-						int villagerLevel = villager.getVillagerData().level();
 						boolean isCured = villager.entityTags().contains("questing_librarians:cured");
 						int maxBooks = isCured ? 4 : ((villagerLevel >= 5) ? 3 : 2);
 
