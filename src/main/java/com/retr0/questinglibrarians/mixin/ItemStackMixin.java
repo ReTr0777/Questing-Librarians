@@ -24,16 +24,16 @@ public abstract class ItemStackMixin {
         ItemStack stack = (ItemStack) (Object) this;
         if (stack.is(Items.ENCHANTED_BOOK)) {
             CustomData customData = stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY);
-            if (!customData.isEmpty()) {
-                boolean isCuredTrade = customData.copyTag().getBooleanOr("cured_trade", false);
-                boolean isTraded = customData.copyTag().getBooleanOr("traded", false);
+            boolean isCuredTrade = customData.copyTag().getBooleanOr("cured_trade", false);
+            boolean isTraded = customData.copyTag().getBooleanOr("traded", false);
 
-                List<Component> tooltip = cir.getReturnValue();
-                if (isCuredTrade) {
-                    tooltip.add(Component.literal("• Cured Reward Trade").withStyle(ChatFormatting.GOLD));
-                } else if (isTraded) {
-                    tooltip.add(Component.literal("• Player Taught Trade").withStyle(ChatFormatting.GRAY));
-                }
+            List<Component> tooltip = cir.getReturnValue();
+            if (isCuredTrade) {
+                tooltip.add(Component.literal("★ Cured Reward Trade").withStyle(ChatFormatting.GOLD));
+            } else if (isTraded) {
+                tooltip.add(Component.literal("✖ Cannot Teach Librarians (Traded Book)").withStyle(ChatFormatting.RED));
+            } else {
+                tooltip.add(Component.literal("✔ Can Teach Librarians (Found Book)").withStyle(ChatFormatting.GREEN));
             }
         }
     }
