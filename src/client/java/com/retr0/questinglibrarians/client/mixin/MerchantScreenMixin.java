@@ -71,14 +71,14 @@ public abstract class MerchantScreenMixin {
             Component noteText = Component.literal("Book Slots: " + customBookCount + "/" + maxBooks);
             graphicsExtractor.text(Minecraft.getInstance().font, noteText, 8, 6, 0xFF404040, false);
 
-            // Render clickable [?] Help button next to the label (x = 85, y = 6)
+            // Render clickable [?] Help button next to the label (x = 90, y = 6)
             Component helpButton = Component.literal("[?]");
-            graphicsExtractor.text(Minecraft.getInstance().font, helpButton, 85, 6, 0xFF4A90E2, true);
+            graphicsExtractor.text(Minecraft.getInstance().font, helpButton, 90, 6, 0xFF4A90E2, true);
         }
     }
 
     /**
-     * Renders the first-time tutorial overlay card perfectly centered on the screen.
+     * Renders the first-time tutorial overlay card dead-centered on the player's screen monitor.
      */
     @Inject(method = "extractContents", at = @At("TAIL"))
     private void renderTutorialOverlay(GuiGraphicsExtractor graphicsExtractor, int mouseX, int mouseY, float partialTick, CallbackInfo ci) {
@@ -90,42 +90,62 @@ public abstract class MerchantScreenMixin {
             int left = accessor.getLeftPos();
             int top = accessor.getTopPos();
 
-            // Full-screen dim overlay covering absolute screen bounds (0,0 to screenWidth,screenHeight)
-            graphicsExtractor.fill(-left, -top, screen.width - left, screen.height - top, 0xD0000000);
+            int screenWidth = Minecraft.getInstance().getWindow().getGuiScaledWidth();
+            int screenHeight = Minecraft.getInstance().getWindow().getGuiScaledHeight();
 
-            // Centered Tutorial Card (X: 23 to 253, Y: 15 to 151) inside container space
-            graphicsExtractor.fill(23, 15, 253, 151, 0xF0141418);
+            // 1. Dim full screen background
+            graphicsExtractor.fill(-left, -top, screenWidth - left, screenHeight - top, 0xD0000000);
+
+            // 2. Exact screen center relative to container space
+            int centerX = (screenWidth / 2) - left;
+            int centerY = (screenHeight / 2) - top;
+
+            int minX = centerX - 120;
+            int maxX = centerX + 120;
+            int minY = centerY - 70;
+            int maxY = centerY + 70;
+
+            // Tutorial Card Box (240x140) dead-centered on screen
+            graphicsExtractor.fill(minX, minY, maxX, maxY, 0xF0141418);
 
             // Blue accent borders
-            graphicsExtractor.fill(21, 13, 255, 15, 0xFF4A90E2);
-            graphicsExtractor.fill(21, 151, 255, 153, 0xFF4A90E2);
-            graphicsExtractor.fill(21, 13, 23, 153, 0xFF4A90E2);
-            graphicsExtractor.fill(253, 13, 255, 153, 0xFF4A90E2);
+            graphicsExtractor.fill(minX - 2, minY - 2, maxX + 2, minY, 0xFF4A90E2);
+            graphicsExtractor.fill(minX - 2, maxY, maxX + 2, maxY + 2, 0xFF4A90E2);
+            graphicsExtractor.fill(minX - 2, minY - 2, minX, maxY + 2, 0xFF4A90E2);
+            graphicsExtractor.fill(maxX, minY - 2, maxX + 2, maxY + 2, 0xFF4A90E2);
 
             // Centered Header
             Component title = Component.literal("Questing Librarians Guide");
-            int titleX = 138 - (font.width(title) / 2);
-            graphicsExtractor.text(font, title, titleX, 22, 0xFFFFD700, true);
+            int titleX = centerX - (font.width(title) / 2);
+            graphicsExtractor.text(font, title, titleX, minY + 8, 0xFFFFD700, true);
 
             // Guide Lines
-            graphicsExtractor.text(font, Component.literal("1. Teach Trades: Right-click a Librarian"), 31, 38, 0xFFE0E0E0, false);
-            graphicsExtractor.text(font, Component.literal("   with a found Enchanted Book."), 31, 48, 0xFFA0A0A0, false);
+            int textLeft = minX + 12;
+            graphicsExtractor.text(font, Component.literal("1. Teach Trades: Right-click a Librarian"), textLeft, minY + 24, 0xFFE0E0E0, false);
+            graphicsExtractor.text(font, Component.literal("   with a found Enchanted Book."), textLeft, minY + 34, 0xFFA0A0A0, false);
 
-            graphicsExtractor.text(font, Component.literal("2. Curing Bonus: Cure a Master Zombie"), 31, 62, 0xFFE0E0E0, false);
-            graphicsExtractor.text(font, Component.literal("   Villager for a max-level book trade!"), 31, 72, 0xFFA0A0A0, false);
+            graphicsExtractor.text(font, Component.literal("2. Curing Bonus: Cure a Master Zombie"), textLeft, minY + 48, 0xFFE0E0E0, false);
+            graphicsExtractor.text(font, Component.literal("   Villager for a max-level book trade!"), textLeft, minY + 58, 0xFFA0A0A0, false);
 
-            graphicsExtractor.text(font, Component.literal("3. Grindstone Reset: Wipe taught trades"), 31, 86, 0xFFE0E0E0, false);
-            graphicsExtractor.text(font, Component.literal("   with a Grindstone to refund Books."), 31, 96, 0xFFA0A0A0, false);
+            graphicsExtractor.text(font, Component.literal("3. Grindstone Reset: Wipe taught trades"), textLeft, minY + 72, 0xFFE0E0E0, false);
+            graphicsExtractor.text(font, Component.literal("   with a Grindstone to refund Books."), textLeft, minY + 82, 0xFFA0A0A0, false);
 
             // Centered Button Box
-            graphicsExtractor.fill(78, 120, 198, 140, 0xFF2E7D32);
-            graphicsExtractor.fill(76, 118, 200, 120, 0xFF4CAF50);
-            graphicsExtractor.fill(76, 140, 200, 142, 0xFF4CAF50);
+            int btnWidth = 120;
+            int btnHeight = 20;
+            int btnMinX = centerX - (btnWidth / 2);
+            int btnMaxX = centerX + (btnWidth / 2);
+            int btnMinY = maxY - 26;
+            int btnMaxY = maxY - 6;
+
+            graphicsExtractor.fill(btnMinX, btnMinY, btnMaxX, btnMaxY, 0xFF2E7D32);
+            graphicsExtractor.fill(btnMinX - 2, btnMinY - 2, btnMaxX + 2, btnMinY, 0xFF4CAF50);
+            graphicsExtractor.fill(btnMinX - 2, btnMaxY, btnMaxX + 2, btnMaxY + 2, 0xFF4CAF50);
 
             // Button Label
             Component buttonText = Component.literal("[ Click to Continue ]");
-            int buttonX = 138 - (font.width(buttonText) / 2);
-            graphicsExtractor.text(font, buttonText, buttonX, 126, 0xFFFFFFFF, true);
+            int buttonX = centerX - (font.width(buttonText) / 2);
+            graphicsExtractor.text(font, buttonText, buttonX, btnMinY + 6, 0xFFFFFFFF, true);
         }
     }
 
@@ -142,12 +162,12 @@ public abstract class MerchantScreenMixin {
             TutorialConfig.save();
             cir.setReturnValue(true);
         } else {
-            // Check if user clicked the [?] Help button at x = 80..105, y = 4..16 relative to leftPos/topPos
+            // Check if user clicked the [?] Help button at x = 85..110, y = 4..16 relative to leftPos/topPos
             AbstractContainerScreenAccessor accessor = (AbstractContainerScreenAccessor) screen;
             double relX = event.x() - accessor.getLeftPos();
             double relY = event.y() - accessor.getTopPos();
 
-            if (relX >= 80 && relX <= 105 && relY >= 4 && relY <= 16) {
+            if (relX >= 85 && relX <= 110 && relY >= 4 && relY <= 16) {
                 // Re-open tutorial guide card
                 TutorialConfig.hasSeenTutorial = false;
                 cir.setReturnValue(true);
