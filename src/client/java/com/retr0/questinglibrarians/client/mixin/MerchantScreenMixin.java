@@ -42,10 +42,10 @@ public abstract class MerchantScreenMixin {
     }
 
     /**
-     * Renders the Book Slots note and the first-time tutorial card overlay.
+     * Renders the Book Slots note in extractLabels.
      */
     @Inject(method = "extractLabels", at = @At("TAIL"))
-    private void renderBookSlotsLabelAndTutorial(GuiGraphicsExtractor graphicsExtractor, int mouseX, int mouseY, CallbackInfo ci) {
+    private void renderBookSlotsLabel(GuiGraphicsExtractor graphicsExtractor, int mouseX, int mouseY, CallbackInfo ci) {
         MerchantScreen screen = (MerchantScreen) (Object) this;
         MerchantOffers offers = screen.getMenu().getOffers();
 
@@ -71,12 +71,20 @@ public abstract class MerchantScreenMixin {
             Component noteText = Component.literal("Book Slots: " + customBookCount + "/" + maxBooks);
             graphicsExtractor.text(Minecraft.getInstance().font, noteText, 8, 6, 0xFF404040, false);
         }
+    }
 
-        // Render first-time tutorial overlay card if the player has not seen it yet
+    /**
+     * Renders the first-time tutorial overlay card in extractContents so it stays on top of all items and slots.
+     */
+    @Inject(method = "extractContents", at = @At("TAIL"))
+    private void renderTutorialOverlay(GuiGraphicsExtractor graphicsExtractor, int mouseX, int mouseY, float partialTick, CallbackInfo ci) {
         if (!TutorialConfig.hasSeenTutorial) {
             Font font = Minecraft.getInstance().font;
 
-            // Semi-transparent dark background card (-10, 10) to (286, 156)
+            // Semi-transparent dark background overlay covering the full screen
+            graphicsExtractor.fill(-200, -200, 500, 500, 0xD0000000);
+
+            // Tutorial Card Box (-10, 10) to (286, 156)
             graphicsExtractor.fill(-10, 10, 286, 156, 0xF0181820);
 
             // Blue accent borders
