@@ -1,10 +1,12 @@
 package com.retr0.questinglibrarians.client;
 
+import com.retr0.questinglibrarians.client.config.TutorialConfig;
 import net.fabricmc.api.ClientModInitializer;
 
 public class QuestingLibrariansClient implements ClientModInitializer {
 	@Override
 	public void onInitializeClient() {
-		// This entrypoint is suitable for setting up client-specific logic, such as rendering.
+		// Load client tutorial config on client startup
+		TutorialConfig.load();
 	}
 }
