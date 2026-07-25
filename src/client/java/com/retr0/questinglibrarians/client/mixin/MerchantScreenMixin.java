@@ -74,45 +74,49 @@ public abstract class MerchantScreenMixin {
     }
 
     /**
-     * Renders the first-time tutorial overlay card in extractContents so it stays on top of all items and slots.
+     * Renders the first-time tutorial overlay card centered inside the trading window.
      */
     @Inject(method = "extractContents", at = @At("TAIL"))
     private void renderTutorialOverlay(GuiGraphicsExtractor graphicsExtractor, int mouseX, int mouseY, float partialTick, CallbackInfo ci) {
         if (!TutorialConfig.hasSeenTutorial) {
             Font font = Minecraft.getInstance().font;
 
-            // Semi-transparent dark background overlay covering the full screen
-            graphicsExtractor.fill(-200, -200, 500, 500, 0xD0000000);
+            // Full-screen dim overlay
+            graphicsExtractor.fill(-300, -300, 600, 600, 0xD0000000);
 
-            // Tutorial Card Box (-10, 10) to (286, 156)
-            graphicsExtractor.fill(-10, 10, 286, 156, 0xF0181820);
+            // Centered Tutorial Card (X: 28 to 248, Y: 18 to 148)
+            graphicsExtractor.fill(28, 18, 248, 148, 0xF0141418);
 
             // Blue accent borders
-            graphicsExtractor.fill(-12, 8, 288, 10, 0xFF4A90E2);
-            graphicsExtractor.fill(-12, 156, 288, 158, 0xFF4A90E2);
-            graphicsExtractor.fill(-12, 8, -10, 158, 0xFF4A90E2);
-            graphicsExtractor.fill(286, 8, 288, 158, 0xFF4A90E2);
+            graphicsExtractor.fill(26, 16, 250, 18, 0xFF4A90E2);
+            graphicsExtractor.fill(26, 148, 250, 150, 0xFF4A90E2);
+            graphicsExtractor.fill(26, 16, 28, 150, 0xFF4A90E2);
+            graphicsExtractor.fill(248, 16, 250, 150, 0xFF4A90E2);
 
-            // Tutorial Title
-            graphicsExtractor.text(font, Component.literal("Questing Librarians Guide"), -2, 16, 0xFFFFD700, true);
+            // Centered Header
+            Component title = Component.literal("Questing Librarians Guide");
+            int titleX = 138 - (font.width(title) / 2);
+            graphicsExtractor.text(font, title, titleX, 24, 0xFFFFD700, true);
 
-            // Tutorial Lines
-            graphicsExtractor.text(font, Component.literal("• Teach Trades: Right-click a Librarian while holding"), -2, 34, 0xFFE0E0E0, false);
-            graphicsExtractor.text(font, Component.literal("  a found Enchanted Book to teach them the trade."), -2, 46, 0xFFA0A0A0, false);
+            // Guide Lines
+            graphicsExtractor.text(font, Component.literal("1. Teach Trades: Right-click a Librarian"), 36, 40, 0xFFE0E0E0, false);
+            graphicsExtractor.text(font, Component.literal("   with a found Enchanted Book."), 36, 50, 0xFFA0A0A0, false);
 
-            graphicsExtractor.text(font, Component.literal("• Curing Bonus: Cure a Master (Lvl 5) Zombie Villager"), -2, 62, 0xFFE0E0E0, false);
-            graphicsExtractor.text(font, Component.literal("  for a random max-level book trade & 4th slot!"), -2, 74, 0xFFA0A0A0, false);
+            graphicsExtractor.text(font, Component.literal("2. Curing Bonus: Cure a Master Zombie"), 36, 64, 0xFFE0E0E0, false);
+            graphicsExtractor.text(font, Component.literal("   Villager for a max-level book trade!"), 36, 74, 0xFFA0A0A0, false);
 
-            graphicsExtractor.text(font, Component.literal("• Reset Trades: Right-click with a Grindstone to wipe"), -2, 90, 0xFFE0E0E0, false);
-            graphicsExtractor.text(font, Component.literal("  taught trades and receive regular Books back."), -2, 102, 0xFFA0A0A0, false);
+            graphicsExtractor.text(font, Component.literal("3. Grindstone Reset: Wipe taught trades"), 36, 88, 0xFFE0E0E0, false);
+            graphicsExtractor.text(font, Component.literal("   with a Grindstone to refund Books."), 36, 98, 0xFFA0A0A0, false);
 
-            // Button Box at bottom center
-            graphicsExtractor.fill(70, 126, 206, 146, 0xFF2E7D32);
-            graphicsExtractor.fill(68, 124, 208, 126, 0xFF4CAF50);
-            graphicsExtractor.fill(68, 146, 208, 148, 0xFF4CAF50);
+            // Centered Button Box
+            graphicsExtractor.fill(78, 120, 198, 138, 0xFF2E7D32);
+            graphicsExtractor.fill(76, 118, 200, 120, 0xFF4CAF50);
+            graphicsExtractor.fill(76, 138, 200, 140, 0xFF4CAF50);
 
             // Button Label
-            graphicsExtractor.text(font, Component.literal("[ Click to Continue ]"), 78, 132, 0xFFFFFFFF, true);
+            Component buttonText = Component.literal("[ Click to Continue ]");
+            int buttonX = 138 - (font.width(buttonText) / 2);
+            graphicsExtractor.text(font, buttonText, buttonX, 124, 0xFFFFFFFF, true);
         }
     }
 
