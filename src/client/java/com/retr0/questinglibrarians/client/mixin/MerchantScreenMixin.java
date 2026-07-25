@@ -14,6 +14,7 @@ import net.minecraft.world.item.component.CustomData;
 import net.minecraft.world.item.trading.MerchantOffer;
 import net.minecraft.world.item.trading.MerchantOffers;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
@@ -23,8 +24,14 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 @Mixin(MerchantScreen.class)
 public abstract class MerchantScreenMixin {
 
+    @Shadow
+    protected int leftPos;
+
+    @Shadow
+    protected int topPos;
+
     /**
-     * Suppresses the default "Trades" header so it can be replaced by the Book Slots note.
+     * Suppresses the default "Trades" header so it can be replaced by the Book Slots note and Help button.
      */
     @Redirect(
             method = "extractLabels",
@@ -42,7 +49,7 @@ public abstract class MerchantScreenMixin {
     }
 
     /**
-     * Renders the Book Slots note in extractLabels.
+     * Renders the Book Slots note and a clickable [?] Help button in extractLabels.
      */
     @Inject(method = "extractLabels", at = @At("TAIL"))
     private void renderBookSlotsLabel(GuiGraphicsExtractor graphicsExtractor, int mouseX, int mouseY, CallbackInfo ci) {
@@ -70,6 +77,10 @@ public abstract class MerchantScreenMixin {
             // Render Book Slots label at x = 8, y = 6 (replacing "Trades")
             Component noteText = Component.literal("Book Slots: " + customBookCount + "/" + maxBooks);
             graphicsExtractor.text(Minecraft.getInstance().font, noteText, 8, 6, 0xFF404040, false);
+
+            // Render clickable [?] Help button next to the label (x = 80, y = 6)
+            Component helpButton = Component.literal("[?]");
+            graphicsExtractor.text(Minecraft.getInstance().font, helpButton, 80, 6, 0xFF4A90E2, true);
         }
     }
 
@@ -121,14 +132,25 @@ public abstract class MerchantScreenMixin {
     }
 
     /**
-     * Intercepts mouse clicks when the tutorial is active to dismiss it permanently.
+     * Intercepts mouse clicks to dismiss or re-open the tutorial guide card.
      */
     @Inject(method = "mouseClicked", at = @At("HEAD"), cancellable = true)
     private void onTutorialClick(MouseButtonEvent event, boolean doubleClick, CallbackInfoReturnable<Boolean> cir) {
         if (!TutorialConfig.hasSeenTutorial) {
+            // Dismiss active tutorial on click
             TutorialConfig.hasSeenTutorial = true;
             TutorialConfig.save();
             cir.setReturnValue(true);
+        } else {
+            // Check if user clicked the [?] Help button at x = 75..100, y = 4..16 relative to leftPos/topPos
+            double relX = event.x() - this.leftPos;
+            double relY = event.y() - this.topPos;
+
+            if (relX >= 75 && relX <= 100 && relY >= 4 && relY <= 16) {
+                // Re-open tutorial guide card
+                TutorialConfig.hasSeenTutorial = false;
+                cir.setReturnValue(true);
+            }
         }
     }
 }
