@@ -3,6 +3,7 @@
 	"package": "com.retr0.questinglibrarians.mixin",
 	"compatibilityLevel": "JAVA_25",
 	"mixins": [
+		"AbstractVillagerMixin",
 		"ZombieMixin",
 		"ZombieVillagerMixin",
 		"VillagerMixin",

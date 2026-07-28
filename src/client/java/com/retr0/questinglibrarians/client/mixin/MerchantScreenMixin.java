@@ -16,39 +16,34 @@ import net.minecraft.world.item.trading.MerchantOffers;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(MerchantScreen.class)
 public abstract class MerchantScreenMixin {
 
-    /**
-     * Suppresses the default "Trades" header so it can be replaced by the Book Slots note and Help button.
-     */
-    @Redirect(
-            method = "extractLabels",
-            at = @At(
-                    value = "INVOKE",
-                    target = "Lnet/minecraft/client/gui/GuiGraphicsExtractor;text(Lnet/minecraft/client/gui/Font;Lnet/minecraft/network/chat/Component;IIIZ)V"
-            )
-    )
-    private void suppressTradesTitle(GuiGraphicsExtractor graphicsExtractor, Font font, Component component, int x, int y, int color, boolean shadow) {
-        if (component != null && component.getString().toLowerCase().contains("trade")) {
-            // Skip rendering default "Trades" header
-            return;
+    private boolean isLibrarianScreen(MerchantScreen screen) {
+        if (screen == null || screen.getTitle() == null) return false;
+        String title = screen.getTitle().getString().toLowerCase();
+        if (title.contains("librarian")) return true;
+        MerchantOffers offers = screen.getMenu().getOffers();
+        if (offers != null) {
+            for (MerchantOffer offer : offers) {
+                if (offer.getResult().is(Items.ENCHANTED_BOOK)) return true;
+            }
         }
-        graphicsExtractor.text(font, component, x, y, color, shadow);
+        return false;
     }
 
     /**
-     * Renders the Book Slots note and a clickable [?] Help button in extractLabels.
+     * Renders the Book Slots note and a clickable [?] Help button in extractLabels for Librarians.
      */
     @Inject(method = "extractLabels", at = @At("TAIL"))
     private void renderBookSlotsLabel(GuiGraphicsExtractor graphicsExtractor, int mouseX, int mouseY, CallbackInfo ci) {
         MerchantScreen screen = (MerchantScreen) (Object) this;
-        MerchantOffers offers = screen.getMenu().getOffers();
+        if (!isLibrarianScreen(screen)) return;
 
+        MerchantOffers offers = screen.getMenu().getOffers();
         if (offers != null) {
             int customBookCount = 0;
             boolean isCured = false;
@@ -67,6 +62,9 @@ public abstract class MerchantScreenMixin {
             int traderLevel = screen.getMenu().getTraderLevel();
             int maxBooks = isCured ? 4 : ((traderLevel >= 5) ? 3 : 2);
 
+            // Cover default "Trades" header with container gray background (x = 7 to 85, y = 5 to 16)
+            graphicsExtractor.fill(7, 5, 85, 16, 0xFFC6C6C6);
+
             // Render Book Slots label at x = 8, y = 6 (replacing "Trades")
             Component noteText = Component.literal("Book Slots: " + customBookCount + "/" + maxBooks);
             graphicsExtractor.text(Minecraft.getInstance().font, noteText, 8, 6, 0xFF404040, false);
@@ -78,29 +76,60 @@ public abstract class MerchantScreenMixin {
     }
 
     /**
-     * Renders the first-time tutorial overlay card dead-centered on the screen.
+     * Renders the first-time tutorial overlay card dead-centered on the screen strictly for Librarians.
      */
     @Inject(method = "extractContents", at = @At("TAIL"))
     private void renderTutorialOverlay(GuiGraphicsExtractor graphicsExtractor, int mouseX, int mouseY, float partialTick, CallbackInfo ci) {
+        MerchantScreen screen = (MerchantScreen) (Object) this;
+        if (!isLibrarianScreen(screen)) return;
+
+        MerchantOffers offers = screen.getMenu().getOffers();
+        boolean hasCustomTrade = false;
+        if (offers != null) {
+            for (MerchantOffer offer : offers) {
+                ItemStack result = offer.getResult();
+                if (result.is(Items.ENCHANTED_BOOK)) {
+                    CustomData customData = result.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY);
+                    if (customData.copyTag().getBooleanOr("traded", false) || customData.copyTag().getBooleanOr("cured_trade", false)) {
+                        hasCustomTrade = true;
+                        break;
+                    }
+                }
+            }
+        }
+
+        if (hasCustomTrade) {
+            for (net.minecraft.client.gui.components.events.GuiEventListener listener : net.fabricmc.fabric.api.client.screen.v1.Screens.getWidgets(screen)) {
+                if (listener.getClass().getSimpleName().equals("CycleTradesButton")) {
+                    if (listener instanceof net.minecraft.client.gui.components.AbstractWidget widget) {
+                        if (widget.visible) {
+                            widget.visible = false;
+                            widget.active = false;
+                        }
+                    }
+                }
+            }
+        }
+
         if (!TutorialConfig.hasSeenTutorial) {
             Font font = Minecraft.getInstance().font;
 
             int screenWidth = Minecraft.getInstance().getWindow().getGuiScaledWidth();
             int screenHeight = Minecraft.getInstance().getWindow().getGuiScaledHeight();
 
-            // 1. Dim full screen background (0,0 to screenWidth,screenHeight)
+            // 1. Dim full screen background
             graphicsExtractor.fill(0, 0, screenWidth, screenHeight, 0xD0000000);
 
             // 2. Exact screen center
             int centerX = screenWidth / 2;
             int centerY = screenHeight / 2;
 
-            int minX = centerX - 120;
-            int maxX = centerX + 120;
-            int minY = centerY - 70;
-            int maxY = centerY + 70;
+            int minX = centerX - 160;
+            int maxX = centerX + 160;
+            int minY = centerY - 80;
+            int maxY = centerY + 80;
 
-            // Tutorial Card Box (240x140) dead-centered on screen
+            // Tutorial Card Box (320x160) dead-centered on screen
             graphicsExtractor.fill(minX, minY, maxX, maxY, 0xF0141418);
 
             // Blue accent borders
@@ -114,35 +143,35 @@ public abstract class MerchantScreenMixin {
             int titleX = centerX - (font.width(title) / 2);
             graphicsExtractor.text(font, title, titleX, minY + 8, 0xFFFFD700, true);
 
-            // Guide Lines (White titles, Gray description body)
-            int textLeft = minX + 12;
+            // Guide Lines
+            int textLeft = minX + 16;
 
             // Line 1: Teach Trades
             Component b1Header = Component.literal("1. Teach Trades:");
-            Component b1Desc1 = Component.literal(" Right-click a Librarian");
-            Component b1Desc2 = Component.literal("   with a found Enchanted Book.");
-            graphicsExtractor.text(font, b1Header, textLeft, minY + 24, 0xFFFFFFFF, false);
-            graphicsExtractor.text(font, b1Desc1, textLeft + font.width(b1Header), minY + 24, 0xFFA0A0A0, false);
-            graphicsExtractor.text(font, b1Desc2, textLeft, minY + 34, 0xFFA0A0A0, false);
+            Component b1Desc1 = Component.literal("   Right-click a Librarian with a found");
+            Component b1Desc2 = Component.literal("   Enchanted Book to teach trades.");
+            graphicsExtractor.text(font, b1Header, textLeft, minY + 22, 0xFFFFFFFF, false);
+            graphicsExtractor.text(font, b1Desc1, textLeft, minY + 32, 0xFFA0A0A0, false);
+            graphicsExtractor.text(font, b1Desc2, textLeft, minY + 41, 0xFFA0A0A0, false);
 
             // Line 2: Curing Bonus
             Component b2Header = Component.literal("2. Curing Bonus:");
-            Component b2Desc1 = Component.literal(" Cure a Master Zombie");
-            Component b2Desc2 = Component.literal("   Villager for a max-level book trade!");
-            graphicsExtractor.text(font, b2Header, textLeft, minY + 48, 0xFFFFFFFF, false);
-            graphicsExtractor.text(font, b2Desc1, textLeft + font.width(b2Header), minY + 48, 0xFFA0A0A0, false);
-            graphicsExtractor.text(font, b2Desc2, textLeft, minY + 58, 0xFFA0A0A0, false);
+            Component b2Desc1 = Component.literal("   Cure a Master Zombie Villager for");
+            Component b2Desc2 = Component.literal("   a guaranteed max-level book trade!");
+            graphicsExtractor.text(font, b2Header, textLeft, minY + 54, 0xFFFFFFFF, false);
+            graphicsExtractor.text(font, b2Desc1, textLeft, minY + 64, 0xFFA0A0A0, false);
+            graphicsExtractor.text(font, b2Desc2, textLeft, minY + 73, 0xFFA0A0A0, false);
 
             // Line 3: Grindstone Reset
             Component b3Header = Component.literal("3. Grindstone Reset:");
-            Component b3Desc1 = Component.literal(" Wipe taught trades");
-            Component b3Desc2 = Component.literal("   with a Grindstone to refund Books.");
-            graphicsExtractor.text(font, b3Header, textLeft, minY + 72, 0xFFFFFFFF, false);
-            graphicsExtractor.text(font, b3Desc1, textLeft + font.width(b3Header), minY + 72, 0xFFA0A0A0, false);
-            graphicsExtractor.text(font, b3Desc2, textLeft, minY + 82, 0xFFA0A0A0, false);
+            Component b3Desc1 = Component.literal("   Right-click a Librarian with a Grindstone");
+            Component b3Desc2 = Component.literal("   to wipe taught trades & refund Books.");
+            graphicsExtractor.text(font, b3Header, textLeft, minY + 86, 0xFFFFFFFF, false);
+            graphicsExtractor.text(font, b3Desc1, textLeft, minY + 96, 0xFFA0A0A0, false);
+            graphicsExtractor.text(font, b3Desc2, textLeft, minY + 105, 0xFFA0A0A0, false);
 
             // Centered Button Box
-            int btnWidth = 120;
+            int btnWidth = 130;
             int btnMinX = centerX - (btnWidth / 2);
             int btnMaxX = centerX + (btnWidth / 2);
             int btnMinY = maxY - 26;
@@ -160,11 +189,12 @@ public abstract class MerchantScreenMixin {
     }
 
     /**
-     * Intercepts mouse clicks to dismiss or re-open the tutorial guide card.
+     * Intercepts mouse clicks strictly for Librarians to dismiss or re-open the tutorial guide card.
      */
     @Inject(method = "mouseClicked", at = @At("HEAD"), cancellable = true)
     private void onTutorialClick(MouseButtonEvent event, boolean doubleClick, CallbackInfoReturnable<Boolean> cir) {
         MerchantScreen screen = (MerchantScreen) (Object) this;
+        if (!isLibrarianScreen(screen)) return;
 
         if (!TutorialConfig.hasSeenTutorial) {
             // Dismiss active tutorial on click
