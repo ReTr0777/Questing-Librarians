@@ -50,36 +50,33 @@ public class QuestingLibrarians implements ModInitializer {
 					if (itemInHand.is(Items.GRINDSTONE)) {
 						MerchantOffers offers = villager.getOffers();
 						if (offers != null) {
-							net.minecraft.world.SimpleContainer container = new net.minecraft.world.SimpleContainer(18);
-							java.util.List<Integer> tradeIndexes = new java.util.ArrayList<>();
-							int slot = 0;
-							for (int i = 0; i < offers.size(); i++) {
+							int removedCount = 0;
+							// Iterate backwards to safely remove trades while iterating
+							for (int i = offers.size() - 1; i >= 0; i--) {
 								MerchantOffer offer = offers.get(i);
 								ItemStack result = offer.getResult();
 								if (result.is(Items.ENCHANTED_BOOK)) {
 									CustomData customData = result.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY);
 									boolean isCuredTrade = customData.copyTag().getBooleanOr("cured_trade", false);
 									if (!isCuredTrade) {
-										ItemStack displayedBook = result.copy();
-										net.minecraft.world.item.component.ItemLore lore = displayedBook.getOrDefault(DataComponents.LORE, net.minecraft.world.item.component.ItemLore.EMPTY);
-										java.util.List<net.minecraft.network.chat.Component> newLoreLines = new java.util.ArrayList<>(lore.lines());
-										newLoreLines.add(net.minecraft.network.chat.Component.literal(""));
-										newLoreLines.add(net.minecraft.network.chat.Component.literal("Click to delete this trade").withStyle(net.minecraft.ChatFormatting.RED, net.minecraft.ChatFormatting.ITALIC));
-										displayedBook.set(DataComponents.LORE, new net.minecraft.world.item.component.ItemLore(newLoreLines));
+										offers.remove(i);
+										removedCount++;
 
-										container.setItem(slot++, displayedBook);
-										tradeIndexes.add(i);
-										if (slot >= 18) break;
+										ItemStack returnedBooks = new ItemStack(Items.BOOK, 1);
+										if (!player.addItem(returnedBooks)) {
+											player.drop(returnedBooks, false);
+										}
 									}
 								}
 							}
 
-							if (slot > 0) {
-								player.openMenu(new net.minecraft.world.SimpleMenuProvider(
-									(containerId, playerInventory, p) -> new com.retr0.questinglibrarians.menu.DeleteTradeMenu(containerId, playerInventory, container, villager, tradeIndexes),
-									net.minecraft.network.chat.Component.literal("Select Trade to Delete")
-								));
-								return InteractionResult.SUCCESS;
+							if (removedCount > 0) {
+								world.playSound(null, villager.getX(), villager.getY(), villager.getZ(),
+										SoundEvents.GRINDSTONE_USE, SoundSource.NEUTRAL, 1.0f, 1.0f);
+								if (world instanceof ServerLevel serverLevel) {
+									serverLevel.sendParticles(ParticleTypes.POOF,
+											villager.getX(), villager.getY() + 1.0, villager.getZ(), 20, 0.4, 0.4, 0.4, 0.05);
+								}
 							} else {
 								world.playSound(null, villager.getX(), villager.getY(), villager.getZ(),
 										SoundEvents.VILLAGER_NO, SoundSource.NEUTRAL, 1.0f, 1.0f);
