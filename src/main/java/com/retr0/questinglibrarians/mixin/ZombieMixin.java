@@ -22,6 +22,9 @@ public abstract class ZombieMixin {
      */
     @Inject(method = "killedEntity", at = @At("HEAD"), cancellable = true)
     private void guaranteeZombification(ServerLevel level, LivingEntity victim, DamageSource damageSource, CallbackInfoReturnable<Boolean> cir) {
+        if (!com.retr0.questinglibrarians.config.QuestingLibrariansConfig.guaranteeZombification) {
+            return;
+        }
         if (victim instanceof Villager villager) {
             Zombie zombie = (Zombie) (Object) this;
             boolean converted = zombie.convertVillagerToZombieVillager(level, villager);

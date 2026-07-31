@@ -34,6 +34,40 @@ public class QuestingLibrarians implements ModInitializer {
 	public void onInitialize() {
 		LOGGER.info("Initializing Questing Librarians!");
 
+		// Load server configuration
+		com.retr0.questinglibrarians.config.QuestingLibrariansConfig.load();
+
+		// Register custom payload for client configuration syncing
+		net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry.clientboundPlay().register(
+				com.retr0.questinglibrarians.config.ConfigSyncPayload.TYPE,
+				com.retr0.questinglibrarians.config.ConfigSyncPayload.CODEC
+		);
+
+		// Sync config to player on join
+		net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
+			net.minecraft.server.level.ServerPlayer player = handler.getPlayer();
+			net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking.send(player, new com.retr0.questinglibrarians.config.ConfigSyncPayload(
+					com.retr0.questinglibrarians.config.QuestingLibrariansConfig.maxBooksNormal,
+					com.retr0.questinglibrarians.config.QuestingLibrariansConfig.maxBooksMaster,
+					com.retr0.questinglibrarians.config.QuestingLibrariansConfig.maxBooksCured
+			));
+		});
+
+		// Register command to open the GUI
+		net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
+			dispatcher.register(net.minecraft.commands.Commands.literal("qlconfig")
+				.requires(source -> source.permissions().hasPermission(net.minecraft.server.permissions.Permissions.COMMANDS_ADMIN))
+				.executes(context -> {
+					net.minecraft.server.level.ServerPlayer player = context.getSource().getPlayerOrException();
+					player.openMenu(new net.minecraft.world.SimpleMenuProvider(
+						(containerId, playerInventory, p) -> new com.retr0.questinglibrarians.config.QuestingLibrariansConfigMenu(containerId, playerInventory),
+						net.minecraft.network.chat.Component.literal("Questing Librarians Config")
+					));
+					return 1;
+				})
+			);
+		});
+
 		// Register interaction event to allow Librarians to learn, upgrade, and unlearn Enchanted Book trades
 		UseEntityCallback.EVENT.register((player, world, hand, entity, hitResult) -> {
 			// Ensure logic only executes on the server side to prevent desyncs
@@ -48,6 +82,9 @@ public class QuestingLibrarians implements ModInitializer {
 					// Right-clicking a Librarian with a Grindstone removes ALL TAUGHT Enchanted Book trades
 					// and gives back regular Books to the player. Cured reward trades (tagged cured_trade) are preserved.
 					if (itemInHand.is(Items.GRINDSTONE)) {
+						if (!com.retr0.questinglibrarians.config.QuestingLibrariansConfig.allowGrindstoneUnlearning) {
+							return InteractionResult.PASS;
+						}
 						MerchantOffers offers = villager.getOffers();
 						if (offers != null) {
 							int removedCount = 0;
@@ -112,13 +149,20 @@ public class QuestingLibrarians implements ModInitializer {
 									int tradeLevel = tradeEnchants.getLevel(ench);
 
 									if (tradeLevel > 0) {
+										if (!com.retr0.questinglibrarians.config.QuestingLibrariansConfig.allowTradeUpgrading) {
+											world.playSound(null, villager.getX(), villager.getY(), villager.getZ(),
+													SoundEvents.VILLAGER_NO, SoundSource.NEUTRAL, 1.0f, 1.0f);
+											return InteractionResult.FAIL;
+										}
 										if (handLevel > tradeLevel) {
 											// Upgrade existing trade in-place without taking up a new slot
 											ItemStack upgradedBook = itemInHand.copy();
 											upgradedBook.setCount(1);
 											CustomData.update(DataComponents.CUSTOM_DATA, upgradedBook, tag -> tag.putBoolean("traded", true));
 
-											int emeraldCost = Math.max(1, 15 - (villagerLevel - 1) * 2);
+											int baseCost = com.retr0.questinglibrarians.config.QuestingLibrariansConfig.baseEmeraldCost;
+											int discount = com.retr0.questinglibrarians.config.QuestingLibrariansConfig.discountPerLevel;
+											int emeraldCost = Math.max(1, baseCost - (villagerLevel - 1) * discount);
 											MerchantOffer upgradedOffer = new MerchantOffer(
 													new ItemCost(Items.EMERALD, emeraldCost),
 													Optional.of(new ItemCost(Items.BOOK, 1)),
@@ -166,7 +210,10 @@ public class QuestingLibrarians implements ModInitializer {
 						// If cured: Max 4 slots total (1 cured trade + 3 taught trades)
 						// Otherwise: Levels 1-4 = Max 2 books | Level 5 (Master) = Max 3 books
 						boolean isCured = villager.entityTags().contains("questing_librarians:cured");
-						int maxBooks = isCured ? 4 : ((villagerLevel >= 5) ? 3 : 2);
+						int maxNormal = com.retr0.questinglibrarians.config.QuestingLibrariansConfig.maxBooksNormal;
+						int maxMaster = com.retr0.questinglibrarians.config.QuestingLibrariansConfig.maxBooksMaster;
+						int maxCured = com.retr0.questinglibrarians.config.QuestingLibrariansConfig.maxBooksCured;
+						int maxBooks = isCured ? maxCured : ((villagerLevel >= 5) ? maxMaster : maxNormal);
 
 						// Refuse learning if maximum capacity has been reached
 						if (customBookCount >= maxBooks) {
@@ -184,7 +231,9 @@ public class QuestingLibrarians implements ModInitializer {
 
 						// Calculate emerald cost based on villager level
 						// Level 1 = 15, Level 2 = 13, Level 3 = 11, Level 4 = 9, Level 5 = 7
-						int emeraldCost = Math.max(1, 15 - (villagerLevel - 1) * 2);
+						int baseCost = com.retr0.questinglibrarians.config.QuestingLibrariansConfig.baseEmeraldCost;
+						int discount = com.retr0.questinglibrarians.config.QuestingLibrariansConfig.discountPerLevel;
+						int emeraldCost = Math.max(1, baseCost - (villagerLevel - 1) * discount);
 
 						// Create a new TradeOffer: (15 - level discount) Emeralds + 1 Book -> Provided Enchanted Book (Traded)
 						MerchantOffer newOffer = new MerchantOffer(

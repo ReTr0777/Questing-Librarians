@@ -23,6 +23,9 @@ public abstract class VillagerMixin {
      */
     @Inject(method = "updateSpecialPrices", at = @At("HEAD"), cancellable = true)
     private void disableSpecialPrices(Player player, CallbackInfo ci) {
+        if (!com.retr0.questinglibrarians.config.QuestingLibrariansConfig.disableCuringDiscounts) {
+            return;
+        }
         Villager villager = (Villager) (Object) this;
         for (MerchantOffer offer : villager.getOffers()) {
             offer.resetSpecialPriceDiff();

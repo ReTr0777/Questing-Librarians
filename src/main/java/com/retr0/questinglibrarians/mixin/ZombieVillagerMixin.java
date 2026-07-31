@@ -42,40 +42,45 @@ public abstract class ZombieVillagerMixin {
         T converted = zombieVillager.convertTo(type, params, afterConversion);
 
         if (converted instanceof Villager villager) {
-            // Curing trade reward ONLY applies to Level 5 (Master) villagers, and only once per villager
-            if (villager.getVillagerData().level() >= 5 && !villager.entityTags().contains("questing_librarians:cured")) {
-                villager.addTag("questing_librarians:cured");
+            // Check config if curing reward is enabled
+            if (com.retr0.questinglibrarians.config.QuestingLibrariansConfig.curingRewardEnabled) {
+                int minLevel = com.retr0.questinglibrarians.config.QuestingLibrariansConfig.curingRewardMinLevel;
+                // Curing trade reward ONLY applies to Level >= minLevel villagers, and only once per villager
+                if (villager.getVillagerData().level() >= minLevel && !villager.entityTags().contains("questing_librarians:cured")) {
+                    villager.addTag("questing_librarians:cured");
 
-                var enchantmentRegistry = level.registryAccess().lookupOrThrow(Registries.ENCHANTMENT);
-                List<Holder.Reference<Enchantment>> enchantments = enchantmentRegistry.listElements().toList();
+                    var enchantmentRegistry = level.registryAccess().lookupOrThrow(Registries.ENCHANTMENT);
+                    List<Holder.Reference<Enchantment>> enchantments = enchantmentRegistry.listElements().toList();
 
-                if (!enchantments.isEmpty()) {
-                    RandomSource random = level.getRandom();
-                    Holder<Enchantment> chosenEnchantment = enchantments.get(random.nextInt(enchantments.size()));
-                    int maxLevel = chosenEnchantment.value().getMaxLevel();
+                    if (!enchantments.isEmpty()) {
+                        RandomSource random = level.getRandom();
+                        Holder<Enchantment> chosenEnchantment = enchantments.get(random.nextInt(enchantments.size()));
+                        int maxLevel = chosenEnchantment.value().getMaxLevel();
 
-                    ItemStack enchantedBook = new ItemStack(Items.ENCHANTED_BOOK);
-                    EnchantmentHelper.updateEnchantments(enchantedBook, mutable -> mutable.set(chosenEnchantment, maxLevel));
+                        ItemStack enchantedBook = new ItemStack(Items.ENCHANTED_BOOK);
+                        EnchantmentHelper.updateEnchantments(enchantedBook, mutable -> mutable.set(chosenEnchantment, maxLevel));
 
-                    // Mark the book as "traded" and "cured_trade" in CustomData
-                    // "traded": prevents using this book to teach other villagers
-                    // "cured_trade": protects this trade from being wiped by the Grindstone
-                    CustomData.update(DataComponents.CUSTOM_DATA, enchantedBook, tag -> {
-                        tag.putBoolean("traded", true);
-                        tag.putBoolean("cured_trade", true);
-                    });
+                        // Mark the book as "traded" and "cured_trade" in CustomData
+                        // "traded": prevents using this book to teach other villagers
+                        // "cured_trade": protects this trade from being wiped by the Grindstone
+                        CustomData.update(DataComponents.CUSTOM_DATA, enchantedBook, tag -> {
+                            tag.putBoolean("traded", true);
+                            tag.putBoolean("cured_trade", true);
+                        });
 
-                    MerchantOffer curedTrade = new MerchantOffer(
-                            new ItemCost(Items.EMERALD, 7), // Level 5 emerald cost is 7
-                            Optional.of(new ItemCost(Items.BOOK, 1)),
-                            enchantedBook,
-                            12,   // maxUses
-                            5,    // villagerXp
-                            0.05f // priceMultiplier
-                    );
+                        int cost = com.retr0.questinglibrarians.config.QuestingLibrariansConfig.curingRewardEmeraldCost;
+                        MerchantOffer curedTrade = new MerchantOffer(
+                                new ItemCost(Items.EMERALD, cost),
+                                Optional.of(new ItemCost(Items.BOOK, 1)),
+                                enchantedBook,
+                                12,   // maxUses
+                                5,    // villagerXp
+                                0.05f // priceMultiplier
+                        );
 
-                    // Add the cured trade to the top of the villager's trade offers
-                    villager.getOffers().add(0, curedTrade);
+                        // Add the cured trade to the top of the villager's trade offers
+                        villager.getOffers().add(0, curedTrade);
+                    }
                 }
             }
         }

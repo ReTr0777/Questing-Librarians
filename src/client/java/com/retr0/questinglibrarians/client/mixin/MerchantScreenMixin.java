@@ -60,7 +60,10 @@ public abstract class MerchantScreenMixin {
             }
 
             int traderLevel = screen.getMenu().getTraderLevel();
-            int maxBooks = isCured ? 4 : ((traderLevel >= 5) ? 3 : 2);
+            int maxNormal = com.retr0.questinglibrarians.config.QuestingLibrariansConfig.maxBooksNormal;
+            int maxMaster = com.retr0.questinglibrarians.config.QuestingLibrariansConfig.maxBooksMaster;
+            int maxCured = com.retr0.questinglibrarians.config.QuestingLibrariansConfig.maxBooksCured;
+            int maxBooks = isCured ? maxCured : ((traderLevel >= 5) ? maxMaster : maxNormal);
 
             // Cover default "Trades" header with container gray background (x = 7 to 85, y = 5 to 16)
             graphicsExtractor.fill(7, 5, 85, 16, 0xFFC6C6C6);
